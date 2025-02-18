@@ -1,0 +1,244 @@
+---
+title: "Assignment 6 - Split-plot randomization"
+author: "COMFORT ADEGBENRO"  
+format:
+  html:
+    code-fold: true 
+    embed-resources: true
+    toc: true
+    number-sections: true
+    theme: cerulean
+---
+
+# Introduction
+
+This assignment will ask you to conduct a split-plot RCBD randomization.
+
+For that, you will first need to watch (and code along with) the following split-plot randomization video:
+
+-   split-plot randomization: https://youtu.be/rXTp3Vw_770?si=MajBK1aZ221orfpa&t=3401 (starts at 00:56:41, watch till end, about 50-min total)
+
+-   The partial script for the video above is in our GitHub repository, 04-classcode, **02-13_spp_randomization_partial.qmd**.
+
+**AFTER watching the video and developing the code in class**, then start working on this HW assignment.
+
+The different sections representing what we did in class were left in the script to provide you a scaffold to start from.
+
+# Instructions
+
+-   Move this script into the `code` subfolder of your `05_spp` project folder\
+-   On this script, fill your name under the `title` section of the YAML
+
+# Goal of this assignment
+
+The goal is this assignment is for you to **design a split-plot RCBD design applicable to your area of study**.
+
+This could be from your own experience, an example from the literature, or something you come up entirely on your own (as long as it makes sense).
+
+In the headings below, you will answer a couple of questions related to study objectives and treatment design, and then move on to randomize your study, create a plot layout, and export the designed table to file.
+
+# Setup
+
+Here is where we load the packages we will use.\
+Make sure to load each package in the chunk below.
+
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(janitor)
+```
+
+# Treatment design
+
+## Objectives
+
+Write here what are the objectives of the study you are designing. Remember that objectives are closely connected with your treatment design, so whatever you say are your objectives should carry through on your choice of treatment factors and levels.
+
+**- The objective of this study is to assess the effect of different irrigation regimes and cotton cultivars on the yield of cotton.**
+
+## Treatment design explanation
+
+Here is where you explain your treatment design, including the name of the treatment factors, their levels (don't forget to include units), and which is the whole-plot treatment factor and which one is the split-plot treatment factor.
+
+**This study has two treatment factors; hence, it will be a 2-way factorial split-plot.** The treatment factors and levels are:
+
+1.  **Whole-plot treatment factor:** irrigation with 2 levels: *well watered and dryland*
+
+2.  **Split-plot treatment factor:** cultivar with 3 levels: *DP 2038, DG 3799, DP 2131*
+
+Additionally,  for the purpose of this study, we will have 4 blocks. Hence, the total expected experimental unit is 24.
+
+## Code
+
+Here develop the code to setup your design (like in class).
+
+# Split-plot in RCBD
+
+## WP randomization
+
+Here, we will randomize the whole-plot treatment factor which is irrigation to the blocks.
+
+```{r whole plot randomization, message=FALSE, warning=FALSE}
+# set seed to ensure results are same always
+
+set.seed(77)
+
+# cross the whole plot trt (irrigation) with block
+
+irr_rand = crossing(irrigation = c("well watered", "dryland"),
+                    block = 1:4) %>%
+  arrange(block) %>% # to arrange the replicated whole plot treatment by the block
+  
+  # randomize levels of irrigation with each block
+  group_by(block) %>%
+  mutate(irrigation = sample(irrigation)) %>%
+  
+  # assign plot numbers to the whole plots
+  ungroup() %>%
+  mutate(wplot = c(101:102,
+                   201:202,
+                   301:302,
+                   401:402))
+
+irr_rand
+```
+
+## SP randomization
+
+Next we create the sub-plot or split-plot treatment and randomize within the whole plot treatment.
+
+```{r split-plot randomization, message=FALSE, warning=FALSE}
+
+cult_rand = crossing(cultivar = c("DP 2038", "DG 3799", "DP 2131"),
+                     wplot = irr_rand$wplot) %>%
+  
+  # arrange by wplot for clarity
+  arrange(wplot) %>%
+  
+  # next randomize the cultivar treatment within each whole plot
+  group_by(wplot) %>%
+  mutate(cultivar= sample(cultivar)) %>%
+  
+  # assign unique plot numbers to the split-plots
+  ungroup() %>%
+  mutate(splot = c(111:116,
+                   211:216,
+                   311:316,
+                   411:416))
+
+head(cult_rand)
+```
+
+
+## Joining WP and SP into one object
+
+The whole plot and split plot are then brought together.
+
+```{r split plot RCBD, message=FALSE, warning=FALSE}
+irr_cult_spp = irr_rand %>%
+  right_join(cult_rand) %>%
+  
+  # add a column for treatment name
+  mutate(trtname = 
+           paste0(
+    str_sub(irrigation, 1, 1), 
+    "-",
+    str_replace_all(cultivar, " ", "")
+    ))
+  
+head(irr_cult_spp, 3)
+
+```
+Then check to see if a block contains all treatments.
+
+```{r quick check on treatments in blocks, message=FALSE, warning=FALSE}
+irr_cult_spp %>%
+  filter(block == 3)
+```
+
+## Plot layout
+
+First add rows, columns and labels for creating the layout.
+
+```{r add rows columns and labels for layout, message=FALSE, warning=FALSE}
+irr_cult_layout = irr_cult_spp %>%
+  # Defining number of rows and columns in the field for plotting purposes
+  mutate(row = rep(1:4, each = 6)) %>%
+  mutate(col = rep(seq(from = 1, 
+                       to = 6, #total number of treatments, 
+                       by = 1), 
+                   times = 4 #total number of blocks
+  )) %>%
+  # Creating plot and trtname labels for plotting
+  mutate(label = paste0(splot, "\n", trtname))
+
+
+head(irr_cult_layout, 3)
+```
+
+Then, create the plot layout for visualization using ggplot.
+
+```{r create plot layout, message=FALSE, warning=FALSE}
+ggplot(data = irr_cult_layout, aes(x= row,
+                                   y= col)) +
+  geom_tile(aes(fill = cultivar),
+            color = "black",
+            show.legend = FALSE) +
+  scale_fill_viridis_d(alpha = 0.4, option = "plasma") +
+  geom_tile(aes(colour = irrigation),
+            fill = NA,
+            show.legend = FALSE,
+            linewidth = 2,
+            linetype = 1
+            ) +
+  scale_color_brewer(palette = "Set1") +
+  geom_text(aes(label = splot), fontface = "bold", vjust = -.8)+
+  geom_text(aes(label = trtname), vjust = 1)+
+  labs(title = " Split-plot RCBD randomization of 2 Irrigation (whole-plot) x \n 3 Cotton Cultivars (split-plot) treatment design") +
+  theme_void()
+
+```
+
+# Exporting to file
+
+1. Export layout as data file in csv file format.
+```{r export csv, message=FALSE, warning=FALSE}
+irr_cult_layout %>%
+  # Rearranging columns  
+  dplyr::select(block, wplot, irrigation, 
+                splot, cultivar,
+                trtname) %>%
+  write_csv("../output/irr_cult_randomization_table.csv")
+
+```
+
+2. Export layout as image in png format.
+```{r export layout image, message=FALSE, warning=FALSE}
+ggsave("../output/irr_cult_layoutmap.png",
+       width = 6,
+       height = 5,
+       bg = "white")
+```
+
+
+# Submitting your work
+
+Once you have developed all the code and answers, make sure to Render this quarto file.
+
+**Notes on rendering**:
+
+-   Make sure to render your work and inspect how the final html look like.\
+-   If it does not look professional for whatever reason, then fix the issue, re-render it, recheck.\
+-   Only send me your work once your html file looks professional.
+    -   **DO NOT** delete the file's heading levels (# and ##). They set up the proper heading 1 and 2 levels, and I use them to guide my grading.\
+
+    -   If a given chunk is also outputting warnings or messages, inhibit this behavior by changing the chunk options `message` and `warning` to `FALSE` (I'll demo this in a moment).
+
+    -   If, after rendered, 2 lines of text are connected and you wish to "break line" between them, add 2 extra spaces after the first one (I'lld demo this in a moment).
+
+After rendering, an .html file will be created on your `code` folder.
+
+Rename this file to `Assignment-06-spp-LASTNAME.html`.
+
+For ex., mine would be `Assignment-06-spp-Bastos.html`.
+
+Submit your work by uploading the **html** file to **eLC Assigment #6 - Split-plot randomization** by Feb 20 11:59 pm.

@@ -1,0 +1,25 @@
+block,wplot,irrigation,splot,cultivar,trtname
+1,101,well watered,111,DP 2038,w-DP2038
+1,101,well watered,112,DG 3799,w-DG3799
+1,101,well watered,113,DP 2131,w-DP2131
+1,102,dryland,114,DP 2038,d-DP2038
+1,102,dryland,115,DP 2131,d-DP2131
+1,102,dryland,116,DG 3799,d-DG3799
+2,201,dryland,211,DP 2038,d-DP2038
+2,201,dryland,212,DP 2131,d-DP2131
+2,201,dryland,213,DG 3799,d-DG3799
+2,202,well watered,214,DG 3799,w-DG3799
+2,202,well watered,215,DP 2038,w-DP2038
+2,202,well watered,216,DP 2131,w-DP2131
+3,301,dryland,311,DG 3799,d-DG3799
+3,301,dryland,312,DP 2131,d-DP2131
+3,301,dryland,313,DP 2038,d-DP2038
+3,302,well watered,314,DP 2131,w-DP2131
+3,302,well watered,315,DG 3799,w-DG3799
+3,302,well watered,316,DP 2038,w-DP2038
+4,401,well watered,411,DP 2038,w-DP2038
+4,401,well watered,412,DP 2131,w-DP2131
+4,401,well watered,413,DG 3799,w-DG3799
+4,402,dryland,414,DP 2131,d-DP2131
+4,402,dryland,415,DG 3799,d-DG3799
+4,402,dryland,416,DP 2038,d-DP2038
